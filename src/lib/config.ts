@@ -1,0 +1,1 @@
+export const COMFYUI_SERVER_URL = 'https://9u7neb1k019qmq-8188.proxy.runpod.net'; 
