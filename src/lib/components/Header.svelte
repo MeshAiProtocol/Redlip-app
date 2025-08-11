@@ -12,25 +12,33 @@
   function openComfyUI() {
     window.open(COMFYUI_SERVER_URL, '_blank');
   }
+
+  function openGallery() {
+    window.open('/gallery', '_blank');
+  }
 </script>
 
 <div class="header">
-  <button class="back-button" on:click={onBack}>
+  <button class="back-button" onclick={onBack}>
     <Icon name="arrowLeft" size={20} />
   </button>
   <h1>{title}</h1>
   <div class="header-buttons">
-    <button class="header-button" on:click={onQueueClick}>
+    <button class="header-button" onclick={onQueueClick}>
       <Icon name="list" size={16} />
       Queue
     </button>
-    <button class="header-button" on:click={onSystemClick}>
+    <button class="header-button" onclick={onSystemClick}>
       <Icon name="settings" size={16} />
       System
     </button>
-    <button class="header-button" on:click={openComfyUI}>
+    <button class="header-button" onclick={openGallery}>
+      <Icon name="image" size={16} />
+      Gallery
+    </button>
+    <button class="header-button" onclick={openComfyUI}>
       <Icon name="server" size={16} />
-      Open ComfyUI
+      ComfyUI
     </button>
   </div>
 </div>

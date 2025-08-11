@@ -9,14 +9,16 @@ export interface ComfyUIResponse {
 }
 
 export async function callComfyUI(
-	endpoint: string,
-	options: RequestInit = {}
+    endpoint: string,
+    options: RequestInit = {},
+    serverOverride?: string
 ): Promise<ComfyUIResponse> {
 	try {
 		const controller = new AbortController();
 		const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minute timeout
 
-		const response = await fetch(`${COMFYUI_SERVER_URL}${endpoint}`, {
+        const baseUrl = serverOverride ?? COMFYUI_SERVER_URL;
+        const response = await fetch(`${baseUrl}${endpoint}`, {
 			...options,
 			signal: controller.signal
 		});
@@ -31,8 +33,8 @@ export async function callComfyUI(
 			};
 		}
 
-		const result = await response.json();
-		return { success: true, data: result };
+        const result = await response.json();
+        return { success: true, data: result };
 
 	} catch (error) {
 		console.error('Error in ComfyUI API call:', error);
@@ -53,28 +55,28 @@ export async function callComfyUI(
 			}
 		}
 
-		return {
-			error: errorMessage,
-			details: error instanceof Error ? error.message : 'Unknown error',
-			serverUrl: COMFYUI_SERVER_URL
-		};
+        return {
+            error: errorMessage,
+            details: error instanceof Error ? error.message : 'Unknown error',
+            serverUrl: serverOverride ?? COMFYUI_SERVER_URL
+        };
 	}
 }
 
-export async function testComfyUIConnection(): Promise<ComfyUIResponse> {
-	console.log('Testing ComfyUI server connection...');
-	return callComfyUI('/system_stats');
+export async function testComfyUIConnection(serverOverride?: string): Promise<ComfyUIResponse> {
+    console.log('Testing ComfyUI server connection...');
+    return callComfyUI('/system_stats', {}, serverOverride);
 }
 
-export async function uploadImage(imageData: FormData): Promise<ComfyUIResponse> {
+export async function uploadImage(imageData: FormData, serverOverride?: string): Promise<ComfyUIResponse> {
 	// Test connection first
-	const connectionTest = await testComfyUIConnection();
+    const connectionTest = await testComfyUIConnection(serverOverride);
 	if (!connectionTest.success) {
 		console.error('ComfyUI server connection test failed:', connectionTest);
 		return {
 			error: 'Cannot connect to ComfyUI server',
 			details: connectionTest.error || 'Server unreachable',
-			serverUrl: COMFYUI_SERVER_URL
+            serverUrl: serverOverride ?? COMFYUI_SERVER_URL
 		};
 	}
 
@@ -88,11 +90,11 @@ export async function uploadImage(imageData: FormData): Promise<ComfyUIResponse>
 		try {
 			console.log(`Upload attempt ${attempt}/${maxRetries}`);
 			
-			const result = await callComfyUI('/upload/image', {
+            const result = await callComfyUI('/upload/image', {
 				method: 'POST',
 				body: imageData,
 				headers: {}, // Let browser set content-type for FormData
-			});
+            }, serverOverride);
 
 			if (result.success) {
 				console.log(`Upload successful on attempt ${attempt}`);
@@ -123,9 +125,9 @@ export async function uploadImage(imageData: FormData): Promise<ComfyUIResponse>
 
 	// All retries failed
 	console.error('All upload attempts failed');
-	return {
-		error: 'Upload failed after multiple attempts',
-		details: lastError instanceof Error ? lastError.message : 'Unknown error',
-		serverUrl: COMFYUI_SERVER_URL
-	};
+    return {
+        error: 'Upload failed after multiple attempts',
+        details: lastError instanceof Error ? lastError.message : 'Unknown error',
+        serverUrl: serverOverride ?? COMFYUI_SERVER_URL
+    };
 } 
