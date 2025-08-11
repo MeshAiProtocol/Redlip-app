@@ -1,9 +1,9 @@
 export const POD_ID = 'g3eynxfpne009h';
 
-// Primary server (for upscale and grain)
+// Primary server (for grain and bump)
 export const COMFYUI_PRIMARY_SERVER_URL = `https://${POD_ID}-111.proxy.runpod.net`;
 
-// Bump adder servers (different GPUs)
+// Worker servers for upscaler (different GPUs)
 export const COMFYUI_BUMP_SERVER_URLS: string[] = [
   `https://${POD_ID}-222.proxy.runpod.net`,
   `https://${POD_ID}-333.proxy.runpod.net`,

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import Icon from '$lib/components/Icon.svelte';
+    import Icon from '$lib/components/Icon.svelte';
+    import Header from '$lib/components/Header.svelte';
 	import { COMFYUI_SERVER_URL } from '$lib/config';
 
 	const tools = [
@@ -34,9 +35,9 @@
 		goto(route);
 	}
 
-	function openComfyUI() {
-		window.open(COMFYUI_SERVER_URL, '_blank');
-	}
+    function handleBack() { /* no-op on home */ }
+    function handleQueueClick() { goto('/queue'); }
+    function handleSystemClick() { goto('/system'); }
 </script>
 
 <svelte:head>
@@ -46,24 +47,14 @@
 
 <div class="container">
 	<div class="content">
-		<!-- Header -->
-		<div class="header">
-			<h1>AI Tools</h1>
-			<div class="header-buttons">
-				<button class="header-button" on:click={() => goto('/queue')}>
-					<Icon name="list" size={16} />
-					Queue
-				</button>
-				<button class="header-button" on:click={() => goto('/system')}>
-					<Icon name="settings" size={16} />
-					System
-				</button>
-				<button class="header-button" on:click={openComfyUI}>
-					<Icon name="server" size={16} />
-					Open ComfyUI
-				</button>
-			</div>
-		</div>
+        <!-- Header -->
+        <Header 
+            title="AI Tools"
+            onBack={handleBack}
+            onQueueClick={handleQueueClick}
+            onSystemClick={handleSystemClick}
+            comfyServers={[]}
+        />
 
 		<!-- Tools Grid -->
 		<div class="tools-grid">
@@ -80,11 +71,7 @@
 							<span class="coming-soon-badge">Coming Soon</span>
 						{/if}
 					</div>
-					{#if tool.status === 'active'}
-						<div class="tool-arrow">
-							<Icon name="arrowRight" size={16} color="#8e8e93" />
-						</div>
-					{/if}
+					
 				</div>
 			{/each}
 		</div>
@@ -98,10 +85,10 @@
 </div>
 
 <style>
-	.container {
+	.container { width:100%;
 		padding: 2rem;
 		max-width: 1200px;
-		margin: 0 auto;
+		margin: 0;
 		background: #000000;
 		min-height: 100vh;
 	}
@@ -110,48 +97,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 2rem;
-	}
-
-	.header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 1rem;
-	}
-
-	.header h1 {
-		font-size: 2.5rem;
-		font-weight: 700;
-		color: #ffffff;
-		margin: 0;
-		letter-spacing: -0.025em;
-	}
-
-	.header-buttons {
-		display: flex;
-		gap: 0.75rem;
-	}
-
-	.header-button {
-		background: #1c1c1e;
-		border: 2px solid #3a3a3c;
-		border-radius: 12px;
-		padding: 0.75rem 1.5rem;
-		cursor: pointer;
-		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-		font-weight: 600;
-		color: #ffffff;
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		backdrop-filter: blur(20px);
-	}
-
-	.header-button:hover {
-		background: #2c2c2e;
-		border-color: #007aff;
-		transform: scale(1.02);
-		box-shadow: 0 8px 32px rgba(0, 122, 255, 0.15);
 	}
 
 	.tools-grid {
@@ -241,16 +186,6 @@
 		border: 1px solid rgba(255, 159, 10, 0.3);
 	}
 
-	.tool-arrow {
-		flex-shrink: 0;
-		opacity: 0.5;
-		transition: opacity 0.3s ease;
-	}
-
-	.tool-card:hover:not(.disabled) .tool-arrow {
-		opacity: 1;
-	}
-
 	.info-section {
 		background: #1c1c1e;
 		border: 1px solid #3a3a3c;
@@ -275,18 +210,8 @@
 	}
 
 	@media (max-width: 768px) {
-		.container {
+		.container { width:100%;
 			padding: 1rem;
-		}
-
-		.header {
-			flex-direction: column;
-			gap: 1rem;
-			align-items: flex-start;
-		}
-
-		.header h1 {
-			font-size: 2rem;
 		}
 
 		.tools-grid {

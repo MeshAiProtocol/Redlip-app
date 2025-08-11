@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { COMFYUI_SERVER_URL } from "$lib/config";
+  import { COMFYUI_SERVER_URL, COMFYUI_PRIMARY_SERVER_URL } from "$lib/config";
   import Header from "$lib/components/Header.svelte";
   import ImageUpload from "$lib/components/ImageUpload.svelte";
   import ActionButtons from "$lib/components/ActionButtons.svelte";
@@ -26,6 +26,7 @@
   let generatedImage = $state<string | null>(null);
   let generatedFilename = $state<string | null>(null);
   let showSettings = $state(false);
+  const selectedServerUrl = $state<string | null>(null); // use primary server
 
   // Grain effect settings
   let motionBlurAngle = $state(12);
@@ -87,7 +88,7 @@
     // Upload to server
     const response = await fetch("/api/comfyui", {
       method: "PUT",
-      body: formData,
+      body: (() => { const fd = new FormData(); fd.append('image', blob, uploadedImageName!); if (selectedServerUrl) fd.append('serverUrl', selectedServerUrl); return fd; })(),
     });
 
     if (!response.ok) {
@@ -172,7 +173,8 @@
           action: "upload_and_process_grain",
           imageName: uploadedImageName,
           filename: filename,
-          settings: settingsToSend
+          settings: settingsToSend,
+          serverUrl: selectedServerUrl || undefined
         }),
       });
 
@@ -222,7 +224,7 @@
       const pollInterval = setInterval(async () => {
         try {
           // Get job history through our API endpoint
-          const historyResponse = await fetch(`/api/comfyui?action=history&prompt_id=${promptId}`);
+          const historyResponse = await fetch(`/api/comfyui?action=history&prompt_id=${promptId}${selectedServerUrl ? `&serverUrl=${encodeURIComponent(selectedServerUrl)}` : ''}`);
 
           if (historyResponse.ok) {
             const responseData = await historyResponse.json();
@@ -251,7 +253,8 @@
 
                   // Use our generated filename to construct the image URL
                   if (generatedFilename) {
-                    generatedImage = `${COMFYUI_SERVER_URL}/view?filename=${generatedFilename}.jpg&type=output&subfolder=DJ`;
+                    const base = selectedServerUrl || COMFYUI_SERVER_URL;
+                    generatedImage = `${base}/view?filename=${generatedFilename}.jpg&type=output&subfolder=DJ`;
                     console.log("Generated Image URL:", generatedImage);
                   }
                 } else if (jobData && jobData.status) {
@@ -288,7 +291,7 @@
               }
             } else {
               // Check queue status as fallback
-              const queueResponse = await fetch("/api/comfyui?action=queue");
+              const queueResponse = await fetch(`/api/comfyui?action=queue${selectedServerUrl ? `&serverUrl=${encodeURIComponent(selectedServerUrl)}` : ''}`);
               if (queueResponse.ok) {
                 const queueData = await queueResponse.json();
                 if (queueData.success && queueData.data) {
@@ -379,10 +382,11 @@
   <div class="content">
     <!-- Header -->
     <Header 
-      title="Grainy Film Effect"
+      title="Grainy Film"
       onBack={handleBack}
       onQueueClick={handleQueueClick}
       onSystemClick={handleSystemClick}
+      comfyServers={[{ url: COMFYUI_PRIMARY_SERVER_URL, label: 'ComfyUI' }]}
     />
 
     <!-- Main Content -->
@@ -544,10 +548,10 @@
 <Toast show={showToast} message={toastMessage} type={toastType} />
 
 <style>
-  .container {
+  .container { width:100%;
     padding: 2rem;
-    max-width: 800px;
-    margin: 0 auto;
+    max-width: 1200px;
+    margin: 0;
     background: #000000;
   }
 
@@ -811,7 +815,7 @@
   }
 
   @media (max-width: 768px) {
-    .container {
+    .container { width:100%;
       padding: 1rem;
     }
 

@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { COMFYUI_SERVER_URL } from '$lib/config';
+    import { COMFYUI_SERVER_URL } from '$lib/config';
+    import Header from '$lib/components/Header.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	
 	// Type definitions
@@ -39,7 +40,7 @@
 		return () => clearInterval(interval);
 	});
 	
-	function openComfyUI() {
+    function openComfyUI() {
 		window.open(COMFYUI_SERVER_URL, '_blank');
 	}
 	
@@ -128,6 +129,17 @@
 	function goBack() {
 		goto('/');
 	}
+
+    // Header handlers to match other pages' header component
+    function handleBack() {
+        goBack();
+    }
+    function handleQueueClick() {
+        goto('/queue');
+    }
+    function handleSystemClick() {
+        goto('/system');
+    }
 	
 	function toggleAutoRefresh() {
 		autoRefresh = !autoRefresh;
@@ -157,23 +169,19 @@
 </script>
 
 <svelte:head>
-	<title>Queue Management - SvelteKit 5</title>
+    <title>Queue</title>
 	<meta name="description" content="ComfyUI Queue Status" />
 </svelte:head>
 
 <div class="container">
 	<div class="content">
-		<!-- Header -->
-		<div class="header">
-			<button class="back-button" on:click={goBack}>← Back</button>
-			<h1>Queue Management</h1>
-			<div class="header-buttons">
-				<button class="header-button" on:click={openComfyUI}>
-					<Icon name="server" size={16} />
-					Open ComfyUI
-				</button>
-			</div>
-		</div>
+        <!-- Header -->
+        <Header 
+            title="Queue"
+            onBack={handleBack}
+            onQueueClick={handleQueueClick}
+            onSystemClick={handleSystemClick}
+        />
 		
 		<!-- Status Bar -->
 		{#if lastRefreshTime}
@@ -255,11 +263,16 @@
 					{#if queueData.queue_running && queueData.queue_running.length > 0}
 						<div class="queue-items">
 							{#each queueData.queue_running as item}
-								<div class="queue-item running">
-									<div class="item-header">
-										<span class="item-number">#{item.number}</span>
-										<span class="item-id">{item.prompt_id}</span>
-									</div>
+                                <div class="queue-item running">
+                                    <div class="item-header">
+                                        <div class="item-meta">
+                                            <span class="item-number">#{item.number}</span>
+                                            <span class="item-id">{item.prompt_id}</span>
+                                        </div>
+                                        <button class="open-btn" title="Open in ComfyUI" on:click={openComfyUI}>
+                                            <Icon name="externalLink" size={14} />
+                                        </button>
+                                    </div>
 									<div class="item-status">
 										<span class="status-icon">⚙️</span>
 										<span>Processing...</span>
@@ -280,11 +293,16 @@
 					{#if queueData.queue_pending && queueData.queue_pending.length > 0}
 						<div class="queue-items">
 							{#each queueData.queue_pending as item}
-								<div class="queue-item pending">
-									<div class="item-header">
-										<span class="item-number">#{item.number}</span>
-										<span class="item-id">{item.prompt_id}</span>
-									</div>
+                                <div class="queue-item pending">
+                                    <div class="item-header">
+                                        <div class="item-meta">
+                                            <span class="item-number">#{item.number}</span>
+                                            <span class="item-id">{item.prompt_id}</span>
+                                        </div>
+                                        <button class="open-btn" title="Open in ComfyUI" on:click={openComfyUI}>
+                                            <Icon name="externalLink" size={14} />
+                                        </button>
+                                    </div>
 									<div class="item-status">
 										<span class="status-icon">⏳</span>
 										<span>Waiting...</span>
@@ -323,10 +341,10 @@
 </div>
 
 <style>
-	.container {
-		padding: 2rem;
-		max-width: 800px;
-		margin: 0 auto;
+    .container { width:100%;
+        padding: 2rem;
+        max-width: 1200px;
+		margin: 0;
 		min-height: 100vh;
 		background: #000000;
 	}
@@ -341,6 +359,7 @@
 		display: flex;
 		align-items: center;
 		gap: 1rem;
+		width: 100%;
 	}
 	
 	.back-button {
@@ -360,8 +379,8 @@
 		transform: scale(1.02);
 	}
 	
-	.header h1 {
-		font-size: 2rem;
+    .header h1 {
+        font-size: 1.5rem;
 		font-weight: 700;
 		color: #ffffff;
 		margin: 0;
@@ -373,11 +392,11 @@
 		gap: 1rem;
 	}
 	
-	.header-button {
-		background: #1c1c1e;
-		border: 2px solid #3a3a3c;
-		border-radius: 12px;
-		padding: 0.75rem 1.5rem;
+    .header-button {
+        background: #1c1c1e;
+        border: 1px solid #2a2a2a;
+        border-radius: 10px;
+        padding: 0.5rem 1rem;
 		cursor: pointer;
 		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 		font-weight: 600;
@@ -395,12 +414,12 @@
 		box-shadow: 0 8px 32px rgba(0, 122, 255, 0.15);
 	}
 	
-	.status-bar {
+    .status-bar {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		padding: 0.75rem 1rem;
-		background: rgba(255, 255, 255, 0.05);
+        padding: 0.5rem 0.75rem;
+        background: rgba(255, 255, 255, 0.04);
 		border-radius: 12px;
 		border: 1px solid rgba(255, 255, 255, 0.1);
 		font-size: 0.875rem;
@@ -415,18 +434,18 @@
 		font-weight: 500;
 	}
 	
-	.controls {
-		display: flex;
-		gap: 1rem;
-		justify-content: center;
-	}
+    .controls {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-start;
+    }
 	
-	.refresh-button,
-	.auto-refresh-button {
-		background: #1c1c1e;
-		border: 2px solid #3a3a3c;
-		border-radius: 12px;
-		padding: 0.75rem 1.5rem;
+    .refresh-button,
+    .auto-refresh-button {
+        background: #1c1c1e;
+        border: 1px solid #2a2a2a;
+        border-radius: 10px;
+        padding: 0.5rem 1rem;
 		cursor: pointer;
 		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 		font-weight: 600;
@@ -455,11 +474,11 @@
 		border-color: #007aff;
 	}
 	
-	.test-connection-button {
-		background: #1c1c1e;
-		border: 2px solid #3a3a3c;
-		border-radius: 12px;
-		padding: 0.75rem 1.5rem;
+    .test-connection-button {
+        background: #1c1c1e;
+        border: 1px solid #2a2a2a;
+        border-radius: 10px;
+        padding: 0.5rem 1rem;
 		cursor: pointer;
 		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 		font-weight: 600;
@@ -625,13 +644,13 @@
 		margin-bottom: 0.5rem;
 	}
 	
-	.queue-card,
-	.summary-card {
-		background: #1c1c1e;
-		border-radius: 16px;
-		padding: 2rem;
+    .queue-card,
+    .summary-card {
+        background: #1c1c1e;
+        border-radius: 14px;
+        padding: 1.25rem;
 		backdrop-filter: blur(20px);
-		border: 1px solid #3a3a3c;
+        border: 1px solid #2a2a2a;
 	}
 	
 	.queue-card h2,
@@ -648,12 +667,12 @@
 		gap: 1rem;
 	}
 	
-	.queue-item {
-		padding: 1rem;
-		border-radius: 12px;
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		background: rgba(255, 255, 255, 0.05);
-	}
+    .queue-item {
+        padding: 0.75rem 0.75rem 0.75rem 0.9rem;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(255, 255, 255, 0.04);
+    }
 	
 	.queue-item.running {
 		border-color: rgba(0, 122, 255, 0.3);
@@ -665,12 +684,33 @@
 		background: rgba(255, 159, 10, 0.1);
 	}
 	
-	.item-header {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 0.5rem;
-	}
+    .item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 0.4rem;
+    }
+
+    .item-meta { display: flex; gap: 0.75rem; align-items: baseline; }
+
+    .open-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+        background: #151515;
+        color: #fff;
+        border: 1px solid #2a2a2a;
+        border-radius: 8px;
+        padding: 0.25rem 0.5rem;
+        cursor: pointer;
+    }
+
+    .open-btn:hover {
+        background: #1e1e1e;
+        border-color: #007aff;
+    }
 	
 	.item-number {
 		font-weight: 600;
@@ -731,7 +771,7 @@
 	}
 	
 	@media (max-width: 768px) {
-		.container {
+		.container { width:100%;
 			padding: 1rem;
 		}
 		
@@ -746,16 +786,12 @@
 			align-items: center;
 		}
 		
-		.queue-card,
-		.summary-card {
-			padding: 1.5rem;
-		}
+        .queue-card,
+        .summary-card {
+            padding: 1rem;
+        }
 		
-		.item-header {
-			flex-direction: column;
-			align-items: flex-start;
-			gap: 0.5rem;
-		}
+        .item-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
 		
 		.summary-grid {
 			grid-template-columns: 1fr;

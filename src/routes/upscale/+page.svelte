@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { COMFYUI_SERVER_URL } from "$lib/config";
+  import { COMFYUI_SERVER_URL, COMFYUI_BUMP_SERVER_URLS } from "$lib/config";
   import Header from "$lib/components/Header.svelte";
   import ImageUpload from "$lib/components/ImageUpload.svelte";
   import ActionButtons from "$lib/components/ActionButtons.svelte";
@@ -26,6 +26,7 @@
   let generatedImage = $state<string | null>(null);
   let generatedFilename = $state<string | null>(null);
   let showSettings = $state(false);
+  let selectedServerUrl = $state<string | null>(null); // dynamically chosen server
 
   // Upscale effect settings
   let creativity = $state(0.1); // denoise renamed to creativity, range 0.01 to 1.00
@@ -83,7 +84,7 @@
     // Upload to server
     const response = await fetch("/api/comfyui", {
       method: "PUT",
-      body: formData,
+      body: (() => { const fd = new FormData(); fd.append('image', blob, uploadedImageName!); if (selectedServerUrl) fd.append('serverUrl', selectedServerUrl); return fd; })(),
     });
 
     if (!response.ok) {
@@ -122,7 +123,16 @@
         throw new Error("Please upload an image first");
       }
 
-      // Upload image to ComfyUI server first
+      // Choose best server for upscale if not selected yet
+      if (!selectedServerUrl) {
+        const bestResp = await fetch(`/api/comfyui?action=best_upscale_server`);
+        if (bestResp.ok) {
+          const d = await bestResp.json();
+          selectedServerUrl = d?.data?.serverUrl || null;
+        }
+      }
+
+      // Upload image to ComfyUI server first (to the chosen server)
       showNotification("Uploading image to server...", "success");
       await uploadImageToServer();
 
@@ -160,7 +170,8 @@
           action: "upload_and_process_upscale",
           imageName: uploadedImageName,
           filename: filename,
-          settings: settingsToSend
+          settings: settingsToSend,
+          serverUrl: selectedServerUrl || undefined
         }),
       });
 
@@ -210,7 +221,7 @@
       const pollInterval = setInterval(async () => {
         try {
           // Get job history through our API endpoint
-          const historyResponse = await fetch(`/api/comfyui?action=history&prompt_id=${promptId}`);
+          const historyResponse = await fetch(`/api/comfyui?action=history&prompt_id=${promptId}${selectedServerUrl ? `&serverUrl=${encodeURIComponent(selectedServerUrl)}` : ''}`);
 
           if (historyResponse.ok) {
             const responseData = await historyResponse.json();
@@ -239,7 +250,8 @@
 
                   // Use our generated filename to construct the image URL
                   if (generatedFilename) {
-                    generatedImage = `${COMFYUI_SERVER_URL}/view?filename=${generatedFilename}.jpg&type=output&subfolder=UPSCALE`;
+                    const base = selectedServerUrl || COMFYUI_SERVER_URL;
+                    generatedImage = `${base}/view?filename=${generatedFilename}.jpg&type=output&subfolder=UPSCALE`;
                     console.log("Generated Image URL:", generatedImage);
                   }
                 } else if (jobData && jobData.status) {
@@ -276,7 +288,7 @@
               }
             } else {
               // Check queue status as fallback
-              const queueResponse = await fetch("/api/comfyui?action=queue");
+              const queueResponse = await fetch(`/api/comfyui?action=queue${selectedServerUrl ? `&serverUrl=${encodeURIComponent(selectedServerUrl)}` : ''}`);
               if (queueResponse.ok) {
                 const queueData = await queueResponse.json();
                 if (queueData.success && queueData.data) {
@@ -371,6 +383,7 @@
       onBack={handleBack}
       onQueueClick={handleQueueClick}
       onSystemClick={handleSystemClick}
+      comfyServers={COMFYUI_BUMP_SERVER_URLS.map((u, i) => ({ url: u, label: `ComfyUI ${i+1}` }))}
     />
 
     <!-- Main Content -->
@@ -475,10 +488,10 @@
 <Toast show={showToast} message={toastMessage} type={toastType} />
 
 <style>
-  .container {
+  .container { width:100%;
     padding: 2rem;
-    max-width: 800px;
-    margin: 0 auto;
+    max-width: 1200px;
+    margin: 0;
     background: #000000;
   }
 
@@ -742,7 +755,7 @@
   }
 
   @media (max-width: 768px) {
-    .container {
+    .container { width:100%;
       padding: 1rem;
     }
 

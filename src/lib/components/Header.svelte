@@ -1,16 +1,16 @@
 <script lang="ts">
   import Icon from "./Icon.svelte";
-  import { COMFYUI_SERVER_URL } from "$lib/config";
 
-  const { title, onBack, onQueueClick, onSystemClick } = $props<{
+  const { title, onBack, onQueueClick, onSystemClick, comfyServers = [] } = $props<{
     title: string;
     onBack: () => void;
     onQueueClick: () => void;
     onSystemClick: () => void;
+    comfyServers?: { url: string; label?: string }[];
   }>();
 
-  function openComfyUI() {
-    window.open(COMFYUI_SERVER_URL, '_blank');
+  function openUrl(url: string) {
+    window.open(url, '_blank');
   }
 
   function openGallery() {
@@ -36,10 +36,14 @@
       <Icon name="image" size={16} />
       Gallery
     </button>
-    <button class="header-button" onclick={openComfyUI}>
-      <Icon name="server" size={16} />
-      ComfyUI
-    </button>
+    {#if comfyServers && comfyServers.length > 0}
+      {#each comfyServers as s, i}
+        <button class="header-button" onclick={() => openUrl(s.url)}>
+          <Icon name="server" size={16} />
+          {i + 1}
+        </button>
+      {/each}
+    {/if}
   </div>
 </div>
 

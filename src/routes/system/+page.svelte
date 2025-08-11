@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { COMFYUI_SERVER_URL } from '$lib/config';
-	import Icon from '$lib/components/Icon.svelte';
+    import { COMFYUI_SERVER_URL } from '$lib/config';
+    import Icon from '$lib/components/Icon.svelte';
+    import Header from '$lib/components/Header.svelte';
 	
 	// Type definitions
 	interface VramInfo {
@@ -63,9 +64,10 @@
 		}
 	});
 	
-	function goBack() {
-		goto('/');
-	}
+    function goBack() { goto('/'); }
+    function handleBack() { goBack(); }
+    function handleQueueClick() { goto('/queue'); }
+    function handleSystemClick() { goto('/system'); }
 
 	function openComfyUI() {
 		window.open(COMFYUI_SERVER_URL, '_blank');
@@ -87,17 +89,13 @@
 
 <div class="container">
 	<div class="content">
-		<!-- Header -->
-		<div class="header">
-			<button class="back-button" on:click={goBack}>← Back</button>
-			<h1>System Information</h1>
-			<div class="header-buttons">
-				<button class="header-button" on:click={openComfyUI}>
-					<Icon name="server" size={16} />
-					Open ComfyUI
-				</button>
-			</div>
-		</div>
+        <!-- Header -->
+        <Header 
+            title="System Information"
+            onBack={handleBack}
+            onQueueClick={handleQueueClick}
+            onSystemClick={handleSystemClick}
+        />
 		
 		{#if isLoading}
 			<div class="loading-section">
@@ -198,10 +196,10 @@
 </div>
 
 <style>
-	.container {
+	.container { width:100%;
 		padding: 2rem;
-		max-width: 800px;
-		margin: 0 auto;
+    max-width: 1200px;
+		margin: 0;
 		min-height: 100vh;
 		background: #000000;
 	}
@@ -210,62 +208,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 2rem;
-	}
-	
-	.header {
-		display: flex;
-		align-items: center;
-		gap: 1rem;
-	}
-	
-	.back-button {
-		background: none;
-		border: 2px solid #3a3a3c;
-		border-radius: 12px;
-		padding: 0.5rem 1rem;
-		cursor: pointer;
-		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-		font-weight: 500;
-		color: #ffffff;
-	}
-	
-	.back-button:hover {
-		background: #1c1c1e;
-		border-color: #007aff;
-		transform: scale(1.02);
-	}
-	
-	.header h1 {
-		font-size: 2rem;
-		font-weight: 700;
-		color: #ffffff;
-		margin: 0;
-		letter-spacing: -0.025em;
-	}
-
-	.header-buttons {
-		display: flex;
-		gap: 1rem;
-	}
-
-	.header-button {
-		background: #007aff;
-		color: white;
-		border: none;
-		border-radius: 12px;
-		padding: 0.75rem 1.5rem;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.header-button:hover {
-		background: #0056cc;
-		transform: translateY(-2px) scale(1.02);
-		box-shadow: 0 8px 32px rgba(0, 122, 255, 0.3);
 	}
 	
 	.loading-section,
@@ -322,7 +264,7 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		margin: 0 auto;
+		margin: 0;
 	}
 	
 	.retry-button:hover {
@@ -412,7 +354,7 @@
 	}
 	
 	@media (max-width: 768px) {
-		.container {
+		.container { width:100%;
 			padding: 1rem;
 		}
 		

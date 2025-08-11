@@ -1,4 +1,4 @@
-import { COMFYUI_FILES_BROWSER_URL, FILES_URL_BUMP, FILES_URL_GRAINY, FILES_URL_UPSCALE } from '$lib/config';
+import { COMFYUI_FILES_BROWSER_URL, FILES_URL_BUMP, FILES_URL_GRAINY, FILES_URL_UPSCALE, COMFYUI_BUMP_SERVER_URLS, COMFYUI_PRIMARY_SERVER_URL } from '$lib/config';
 
 type FileEntry = {
   type: 'file' | 'folder';
@@ -19,13 +19,17 @@ async function fetchCategory(fetchFn: typeof fetch, url: string): Promise<FileEn
 }
 
 export const load = async ({ fetch }) => {
-  // Use absolute URLs from config
-  const upscaleUrl = FILES_URL_UPSCALE ?? `${COMFYUI_FILES_BROWSER_URL}?folder_type=outputs&folder_path=UPSCALE&`;
+  // Build absolute URLs
   const grainyUrl = FILES_URL_GRAINY ?? `${COMFYUI_FILES_BROWSER_URL}?folder_type=outputs&folder_path=GRAINY&`;
   const bumpUrl = FILES_URL_BUMP ?? `${COMFYUI_FILES_BROWSER_URL}?folder_type=outputs&folder_path=BUMP&`;
 
-  const [upscale, grainy, bump] = await Promise.all([
-    fetchCategory(fetch, upscaleUrl),
+  // Fetch upscale files from all worker servers (222/333/444)
+  const upscaleUrls = COMFYUI_BUMP_SERVER_URLS.map((server) => `${server}/browser/files?folder_type=outputs&folder_path=UPSCALE&`);
+  const upscaleLists = await Promise.all(upscaleUrls.map((u) => fetchCategory(fetch, u)));
+  const upscale = upscaleLists.flat();
+
+  // Grain and bump are produced on the primary server
+  const [grainy, bump] = await Promise.all([
     fetchCategory(fetch, grainyUrl),
     fetchCategory(fetch, bumpUrl)
   ]);

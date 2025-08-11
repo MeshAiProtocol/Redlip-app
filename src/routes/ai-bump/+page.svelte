@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { COMFYUI_SERVER_URL } from "$lib/config";
+  import { COMFYUI_SERVER_URL, COMFYUI_PRIMARY_SERVER_URL } from "$lib/config";
   import Header from "$lib/components/Header.svelte";
   import ImageUpload from "$lib/components/ImageUpload.svelte";
   import PaintingCanvas from "$lib/components/PaintingCanvas.svelte";
@@ -28,6 +28,7 @@
   let generatedFilename = $state<string | null>(null);
   let maskImage = $state<string | null>(null);
   let showSettings = $state(false);
+  let selectedServerUrl = $state<string | null>(null);
 
   // CLIP text encoder settings
   let clipTextPrompt = $state("Extremely tight, fabric pants. clinging tightly to create visible creases and folds due to the fabric's high stretch. The pants feature a pronounced, exaggerated bulge around the crotch area, clearly defined by the tension. naturall lighting with soft, high contrast shadows enhances depth, emphasizing the stretch-induced wrinkles and contours around the crotch and thighs. strong shadows drawing attention to the tight fit and contours.");
@@ -90,7 +91,7 @@
     // Upload to server
     const response = await fetch("/api/comfyui", {
       method: "PUT",
-      body: formData,
+      body: (() => { const fd = new FormData(); fd.append('image', blob, uploadedImageName!); if (selectedServerUrl) fd.append('serverUrl', selectedServerUrl); return fd; })(),
     });
 
     if (!response.ok) {
@@ -189,6 +190,9 @@
         throw new Error("Please upload an image first");
       }
 
+      // Always use primary server for bump (server selection handled on backend)
+      selectedServerUrl = null;
+
       // Upload image to ComfyUI server first
       showNotification("Uploading image to server...", "success");
       await uploadImageToServer();
@@ -220,6 +224,7 @@
           maskImage: maskImage, // Send the mask image if available
           filename: filename, // Send the generated filename to the server
           clipTextPrompt: clipTextPrompt, // Send the custom prompt
+          serverUrl: selectedServerUrl,
         }),
       });
 
@@ -269,7 +274,7 @@
       const pollInterval = setInterval(async () => {
         try {
           // Get job history through our API endpoint
-          const historyResponse = await fetch(`/api/comfyui?action=history&prompt_id=${promptId}`);
+          const historyResponse = await fetch(`/api/comfyui?action=history&prompt_id=${promptId}${selectedServerUrl ? `&serverUrl=${encodeURIComponent(selectedServerUrl)}` : ''}`);
 
           if (historyResponse.ok) {
             const responseData = await historyResponse.json();
@@ -306,8 +311,9 @@
                   isTrackingJob = false;
 
                   // Use our generated filename to construct the image URL
-                  if (generatedFilename) {
-                    generatedImage = `${COMFYUI_SERVER_URL}/view?filename=${generatedFilename}.jpg&type=output&subfolder=DJ`;
+          if (generatedFilename) {
+            const base = selectedServerUrl || COMFYUI_SERVER_URL;
+            generatedImage = `${base}/view?filename=${generatedFilename}.jpg&type=output&subfolder=DJ`;
                     console.log("Generated Image URL:", generatedImage);
                   }
                 } else if (jobData && jobData.status) {
@@ -347,7 +353,7 @@
               }
             } else {
               // Check queue status as fallback
-              const queueResponse = await fetch("/api/comfyui?action=queue");
+              const queueResponse = await fetch(`/api/comfyui?action=queue${selectedServerUrl ? `&serverUrl=${encodeURIComponent(selectedServerUrl)}` : ''}`);
               if (queueResponse.ok) {
                 const queueData = await queueResponse.json();
                 if (queueData.success && queueData.data) {
@@ -439,10 +445,11 @@
   <div class="content">
     <!-- Header -->
     <Header 
-      title="AI Bump Adder"
+      title="AI Bump"
       onBack={handleBack}
       onQueueClick={handleQueueClick}
       onSystemClick={handleSystemClick}
+      comfyServers={[{ url: COMFYUI_PRIMARY_SERVER_URL, label: 'ComfyUI' }]}
     />
 
     <!-- Main Content -->
@@ -533,10 +540,10 @@
 <Toast show={showToast} message={toastMessage} type={toastType} />
 
 <style>
-  .container {
+  .container { width:100%;
     padding: 2rem;
-    max-width: 800px;
-    margin: 0 auto;
+    max-width: 1200px;
+    margin: 0;
     background: #000000;
   }
 
@@ -721,7 +728,7 @@
   }
 
   @media (max-width: 768px) {
-    .container {
+    .container { width:100%;
       padding: 1rem;
     }
 
